@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<!--
+  index.html
+  Open this file by double-clicking it. Nothing to install.
+  (With internet, it uses the Inter font. Offline, it falls back to your system font.)
+
+  What's on the page:
+    - Top bar:  a Dark mode switch (the page starts light)
+    - Hero:     the title and a short description
+    - Input:    the token set (add or remove a token from any column),
+                Strict / Standard / Loose / Custom tolerance,
+                and a drift amount for spacing, color, type, and radius
+    - Preview:  a UI capture, its build snapshot, and the canvas toolbar
+                (overlay on/off, zoom, and All / Issues only)
+    - Summary:  the coverage ring, category bars, and each checked value
+
+  The other files:
+    - sample-data.js : the fake tokens and the sample UI values
+    - scanner.js     : the checking logic and the page behavior
+    - styles.css     : how everything looks
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drift Check — Design Token Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+  <!-- Everything lives inside this one wrapper. The overlay starts switched on. -->
+  <div class="to-app to-overlay-on" id="to-app" data-theme="light">
+
+    <!-- ===== Top bar ===== -->
+    <header class="to-nav">
+      <span class="to-crumb">Design system utility</span>
+
+      <div class="to-nav-actions">
+        <!-- Dark mode switch. The page starts in light mode. -->
+        <button type="button" class="to-switch" id="to-theme" role="switch" aria-checked="false" aria-label="Dark mode">
+          <svg class="to-theme-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+          <span class="to-switch-label">Dark mode</span>
+          <span class="to-switch-track" aria-hidden="true"><span class="to-switch-thumb"></span></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== Hero ===== -->
+    <section class="to-hero">
+      <h1 class="to-hero-title">Drift Check</h1>
+      <p class="to-hero-text">Inspect rendered UI against your design tokens to catch spacing, color, type, and radius drift.</p>
+    </section>
+
+    <main class="to-workspace">
+
+      <!-- ===== Input: the tokens the scan compares against ===== -->
+      <section class="to-panel to-input-panel" id="to-input-panel" aria-labelledby="to-input-title">
+        <div class="to-panel-head">
+          <div class="to-input-intro">
+            <p class="to-section-label">Input</p>
+            <h2 class="to-panel-title" id="to-input-title">Token set</h2>
+            <p class="to-panel-sub" id="to-input-sub"></p>
+          </div>
+          <!-- Shown only while the token grid is hidden -->
+          <div class="to-input-summary" id="to-input-summary">
+            <span class="to-summary-title" id="to-summary-title">Token set</span>
+            <span class="to-summary-swatches" id="to-summary-swatches" aria-hidden="true"></span>
+            <span class="to-summary-scales" id="to-summary-scales"></span>
+          </div>
+          <!-- Strict / Standard / Loose / Custom (filled in by scanner.js), reset, and hide -->
+          <div class="to-head-actions">
+            <span class="to-control-label" id="to-presets-label">Tolerance</span>
+            <div class="to-segmented" id="to-presets" role="group" aria-labelledby="to-presets-label"></div>
+            <button type="button" class="to-btn to-ghost" id="to-reset" hidden>Reset defaults</button>
+            <button type="button" class="to-btn to-ghost to-tokens-toggle" id="to-tokens-toggle"
+                    aria-expanded="true" aria-controls="to-tokens">Hide ▴</button>
+          </div>
+        </div>
+        <!-- Spacing / Color / Type / Radius. scanner.js draws each row,
+             a hover-only remove button, and a quiet + Add control. -->
+        <div class="to-tokens-clip">
+          <div class="to-tokens" id="to-tokens"></div>
+        </div>
+      </section>
+
+      <!-- ===== Preview: the canvas with the sample UI ===== -->
+      <section class="to-panel to-canvas-panel" aria-labelledby="to-canvas-title">
+        <div class="to-panel-head to-canvas-head">
+          <div>
+            <p class="to-section-label">Preview</p>
+            <h2 class="to-panel-title" id="to-canvas-title">Canvas</h2>
+          </div>
+          <!-- Which component is on the canvas (buttons filled in by scanner.js) -->
+          <div class="to-segmented" id="to-captures" role="group" aria-label="UI capture"></div>
+        </div>
+        <!-- Which lifecycle snapshot, plus the filename those two choices make -->
+        <div class="to-build-bar">
+          <div class="to-build-control">
+            <span class="to-control-label" id="to-builds-label">Build</span>
+            <div class="to-segmented" id="to-builds" role="group" aria-labelledby="to-builds-label"></div>
+          </div>
+          <span class="to-build-file" id="to-build-file"></span>
+        </div>
+
+        <div class="to-stage" id="to-stage">
+          <!-- The sample UI is drawn here by scanner.js -->
+          <div class="to-sample" id="to-sample"></div>
+          <!-- The outlines and spec callouts are drawn here, on top of the sample -->
+          <div class="to-layer" id="to-layer" aria-hidden="true"></div>
+
+          <!-- One toolbar along the top of the canvas.
+               Drag to pan; Ctrl/⌘ + scroll zooms; O toggles the overlay. -->
+          <div class="to-canvas-bar" role="toolbar" aria-label="Canvas controls">
+            <div class="to-bar-group">
+              <button type="button" class="to-switch to-bar-switch" id="to-toggle" role="switch"
+                      aria-checked="true" aria-label="Overlay" title="Show or hide the overlay (O)">
+                <span class="to-switch-label">Overlay</span>
+                <span class="to-switch-track" aria-hidden="true"><span class="to-switch-thumb"></span></span>
+              </button>
+              <span class="to-bar-divider" aria-hidden="true"></span>
+              <button type="button" class="to-zoom-btn" id="to-zoom-out" aria-label="Zoom out" title="Zoom out (−)">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8"/></svg>
+              </button>
+              <button type="button" class="to-zoom-value" id="to-zoom-reset" title="Reset zoom (0)">100%</button>
+              <button type="button" class="to-zoom-btn" id="to-zoom-in" aria-label="Zoom in" title="Zoom in (+)">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8M8 4v8"/></svg>
+              </button>
+              <span class="to-bar-divider" aria-hidden="true"></span>
+              <button type="button" class="to-zoom-btn" id="to-recenter" aria-label="Recenter"
+                      title="Recenter the sample (drag to pan, Ctrl/⌘ + scroll to zoom)">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="2.5"/>
+                  <path d="M8 1.5v2.5M8 12v2.5M1.5 8H4M12 8h2.5"/>
+                </svg>
+              </button>
+            </div>
+            <div class="to-segmented" id="to-show" role="group" aria-label="What the overlay shows">
+              <button type="button" class="is-active" data-show="all" aria-pressed="true">All</button>
+              <button type="button" data-show="issues" aria-pressed="false">Issues only</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===== Summary: the findings ===== -->
+      <aside class="to-panel to-findings-panel" id="to-findings-panel" aria-labelledby="to-findings-title">
+        <div class="to-panel-head">
+          <div>
+            <p class="to-section-label">Summary</p>
+            <h2 class="to-panel-title" id="to-findings-title">Findings</h2>
+            <p class="to-panel-sub" id="to-findings-sub"></p>
+          </div>
+        </div>
+
+        <!-- Coverage ring beside the four category bars -->
+        <div class="to-health">
+          <div class="to-score" aria-label="Token coverage">
+            <div class="to-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="to-ring-track" cx="60" cy="60" r="52"/>
+                <g id="to-ring-segs"></g>
+              </svg>
+              <div class="to-ring-center">
+                <span class="to-ring-number"><span id="to-score-number">0</span>%</span>
+              </div>
+            </div>
+            <span class="to-score-label">On token</span>
+          </div>
+          <div class="to-breakdown" id="to-breakdown"></div>
+        </div>
+
+        <!-- Filter buttons, a one-line explanation, an optional token chip, and the list -->
+        <div class="to-tabs" id="to-tabs" role="group" aria-label="Filter findings"></div>
+        <p class="to-filter-note" id="to-filter-note" aria-live="polite"></p>
+        <div class="to-spot-bar" id="to-spot-bar" hidden></div>
+        <ul class="to-findings" id="to-findings"></ul>
+      </aside>
+    </main>
+
+    <!-- ===== How it works ===== -->
+    <section class="to-how" aria-labelledby="to-how-title">
+      <h2 class="to-section-label" id="to-how-title">How it works</h2>
+      <div class="to-how-grid">
+        <article class="to-how-card">
+          <span class="to-how-step">Step 1</span>
+          <h3>Read the tokens</h3>
+          <p>Load the system's named values. Edit, add, or click any token name above to spotlight where it's used.</p>
+        </article>
+        <article class="to-how-card">
+          <span class="to-how-step">Step 2</span>
+          <h3>Scan the rendered UI</h3>
+          <p>Read the browser's live computed styles on every element to measure what is actually painted on screen.</p>
+        </article>
+        <article class="to-how-card">
+          <span class="to-how-step">Step 3</span>
+          <h3>Classify every value</h3>
+          <p>Exact matches a token, Drifted sits within your active tolerance, and Unmapped flags off-system overrides.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="to-footer">
+      <span>Prototype built with plain HTML, CSS, and JavaScript. All data is fictional.</span>
+      <span>Edit any token above, switch tolerance, or press O to inspect live drift.</span>
+    </footer>
+
+    <!-- Hover card, shown when you point at an item on the canvas -->
+    <div class="to-tip" id="to-tip" role="tooltip"></div>
+  </div>
+
+  <!-- Order matters: the data first, then the scanner that uses it. -->
+  <script src="./sample-data.js"></script>
+  <script src="./scanner.js"></script>
+</body>
+</html>

@@ -1,0 +1,2043 @@
+/*
+ * styles.css
+ * ---------------------------------------------------------------------------
+ * Every rule starts with ".to-app", so nothing here can affect anything
+ * outside the tool. ("to" is the scope prefix.)
+ *
+ * Spacing follows an 8px grid: 8, 16, 24, 32, 40, 48, 64.
+ * (4px is used only for tiny inner offsets, like inside a tag.)
+ *
+ * Type: Inter for everything you read. Monospace only for token names,
+ * CSS values, and code.
+ *
+ * Sections:
+ *   1. Colors and basics
+ *   2. Top bar and switches
+ *   3. Hero
+ *   4. Workspace and panels
+ *   5. Input: token set
+ *   6. Preview: score, canvas, and overlay
+ *   7. Summary: findings
+ *   8. Hover card
+ *   9. How it works and footer
+ *  10. Small screens and reduced motion
+ */
+
+/* =========================================================================
+ * 1. COLORS AND BASICS
+ * ======================================================================= */
+
+/* Light palette. The canvas (.to-stage) always uses it, even in dark mode,
+   so the sample UI and its callouts look the same in both modes. */
+.to-app,
+.to-app .to-stage {
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --surface-3: #f1f1f3;
+  --line: #e6e6e9;
+  --line-2: #d4d4d9;
+  --text: #18181b;
+  --muted: #52525b;
+  --faint: #71717a;
+  --accent: #4353c4;
+  --on: #18181b;
+
+  /* Status colors, split by job. Solid paints marks (rings, bars, dots,
+     outlines). Text is the ink for labels and off-token values. Soft is
+     the tint inside an outline. */
+  --to-exact-solid: #10b981;
+  --to-exact-text: #047857;
+  --to-exact-soft: rgba(16, 185, 129, 0.08);
+
+  --to-drifted-solid: #f59e0b;
+  --to-drifted-text: #b45309;
+  --to-drifted-soft: rgba(245, 158, 11, 0.09);
+
+  --to-unmapped-solid: #e11d48;
+  --to-unmapped-text: #be123c;
+  --to-unmapped-soft: rgba(225, 29, 72, 0.08);
+
+  --row-hover: rgba(15, 23, 42, 0.03);
+  --seg-shadow: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --tip-shadow: 0 16px 40px rgba(24, 24, 27, 0.06), 0 2px 8px rgba(24, 24, 27, 0.04);
+  --focus: rgba(67, 83, 196, 0.18);
+}
+
+/* Dark palette: calm neutral grays, no glow. Set by the Dark mode switch. */
+.to-app[data-theme="dark"] {
+  --bg: #0f0f11;
+  --surface: #161618;
+  --surface-2: #1b1b1e;
+  --surface-3: #232327;
+  --line: #2a2a2f;
+  --line-2: #3a3a41;
+  --text: #ededef;
+  --muted: #a1a1aa;
+  --faint: #8a8a93;
+  --accent: #8b9cf4;
+  --on: #ededef;
+
+  --to-exact-solid: #10b981;
+  --to-exact-text: #34d399;
+  --to-exact-soft: rgba(16, 185, 129, 0.14);
+
+  --to-drifted-solid: #f59e0b;
+  --to-drifted-text: #fbbf24;
+  --to-drifted-soft: rgba(245, 158, 11, 0.14);
+
+  --to-unmapped-solid: #f43f5e;
+  --to-unmapped-text: #fb7185;
+  --to-unmapped-soft: rgba(244, 63, 94, 0.14);
+
+  --row-hover: rgba(255, 255, 255, 0.04);
+  --seg-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --tip-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
+  --focus: rgba(139, 156, 244, 0.28);
+
+  color-scheme: dark;
+}
+
+.to-app {
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Fill the browser window and scroll inside it, so the page <body>
+     never needs styling (it is outside this wrapper). */
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.to-app *,
+.to-app *::before,
+.to-app *::after {
+  box-sizing: border-box;
+}
+
+/* Each status points at its own palette. --c is the solid mark, --c-ink
+   is the text, and --c-soft is the tinted fill. */
+.to-app [data-status="exact"] {
+  --c: var(--to-exact-solid);
+  --c-ink: var(--to-exact-text);
+  --c-soft: var(--to-exact-soft);
+}
+
+.to-app [data-status="drifted"] {
+  --c: var(--to-drifted-solid);
+  --c-ink: var(--to-drifted-text);
+  --c-soft: var(--to-drifted-soft);
+}
+
+.to-app [data-status="unmapped"] {
+  --c: var(--to-unmapped-solid);
+  --c-ink: var(--to-unmapped-text);
+  --c-soft: var(--to-unmapped-soft);
+}
+
+.to-app button {
+  font: inherit;
+  color: inherit;
+}
+
+.to-app :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.to-app code,
+.to-app kbd {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.to-app kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1;
+}
+
+/* Small uppercase label above each region: Input, Preview, Summary */
+.to-app .to-section-label {
+  margin: 0 0 8px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* =========================================================================
+ * 2. TOP BAR AND SWITCHES
+ * ======================================================================= */
+
+.to-app .to-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 64px;
+  padding: 0 40px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.to-app .to-crumb {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.to-app .to-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* On / Off switch (used for Dark mode and for the canvas overlay) */
+.to-app .to-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.to-app .to-switch:hover {
+  border-color: var(--line-2);
+}
+
+.to-app .to-theme-icon {
+  flex: none;
+  margin-left: -4px;
+  color: var(--faint);
+}
+
+.to-app .to-switch-label {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.to-app .to-switch-track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--line-2);
+  transition: background-color 0.2s ease;
+}
+
+.to-app .to-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.to-app .to-switch-state {
+  min-width: 24px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.to-app .to-switch[aria-checked="true"] .to-switch-track {
+  background: var(--on);
+}
+
+.to-app .to-switch[aria-checked="true"] .to-switch-thumb {
+  transform: translateX(12px);
+  background: var(--surface);
+}
+
+.to-app .to-switch[aria-checked="true"] .to-switch-state,
+.to-app .to-switch[aria-checked="true"] .to-theme-icon {
+  color: var(--text);
+}
+
+/* =========================================================================
+ * 3. HERO
+ * ======================================================================= */
+
+.to-app .to-hero {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 40px 16px;
+}
+
+.to-app .to-hero-title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.to-app .to-hero-text {
+  max-width: none;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 24px;
+  width: 100%;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+}
+
+/* =========================================================================
+ * 4. WORKSPACE AND PANELS
+ * ======================================================================= */
+
+.to-app .to-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px 48px;
+}
+
+.to-app .to-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Preview and Findings share a row, so their cards end on the same line.
+   The canvas sets the height. Findings stretches to match and scrolls. */
+.to-app .to-canvas-panel,
+.to-app .to-findings-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.to-app .to-canvas-panel .to-stage {
+  flex: 1 1 auto;
+}
+
+.to-app .to-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.to-app .to-panel-title {
+  margin: 0;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.to-app .to-panel-sub {
+  margin: 0;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* =========================================================================
+ * 5. INPUT: TOKEN SET
+ * ======================================================================= */
+
+.to-app .to-input-panel {
+  grid-column: 1 / -1;
+}
+
+.to-app .to-input-panel .to-panel-head {
+  flex-wrap: wrap;
+  transition: padding 0.28s ease, border-color 0.28s ease;
+}
+
+/* Collapsed: one slim bar. The grid folds away underneath. */
+.to-app .to-input-summary {
+  display: none;
+  align-items: center;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+.to-app .to-input-panel.is-collapsed .to-input-intro {
+  display: none;
+}
+
+.to-app .to-input-panel.is-collapsed .to-input-summary {
+  display: flex;
+}
+
+.to-app .to-input-panel.is-collapsed .to-panel-head {
+  min-height: 54px;
+  padding: 11px 16px;
+  border-bottom-color: transparent;
+}
+
+.to-app .to-summary-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.to-app .to-summary-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.to-app .to-mini-gap {
+  width: 6px;
+  flex: none;
+}
+
+.to-app .to-mini-swatch {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+}
+
+.to-app .to-summary-scales {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.to-app .to-scale-pill {
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.to-app .to-tokens-toggle {
+  padding: 0 8px;
+  color: var(--muted);
+}
+
+.to-app .to-tokens-clip {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.to-app .to-input-panel.is-collapsed .to-tokens-clip {
+  grid-template-rows: 0fr;
+}
+
+.to-app .to-tokens-clip > .to-tokens {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Tolerance presets and Reset, on the right of the Input header */
+.to-app .to-head-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.to-app .to-control-label {
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Quiet secondary button */
+.to-app .to-btn {
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.to-app .to-btn:hover {
+  border-color: var(--faint);
+  background: var(--surface-2);
+}
+
+.to-app .to-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+  border-color: var(--accent);
+}
+
+/* Hide and Reset are text actions. Reset is absent until something changes. */
+.to-app .to-btn.to-ghost {
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.to-app .to-btn.to-ghost:hover {
+  border-color: transparent;
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.to-app .to-btn.to-ghost:focus-visible {
+  border-color: transparent;
+}
+
+.to-app .to-tokens {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.to-app .to-token-group {
+  padding: 16px;
+}
+
+.to-app .to-token-group + .to-token-group {
+  border-left: 1px solid var(--line);
+}
+
+.to-app .to-token-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.to-app .to-token-group-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* "Drift ± [ 2 ] px" in the column header. Borderless until hovered. */
+.to-app .to-drift {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+  color: var(--faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: text;
+}
+
+.to-app .to-drift-input {
+  width: 36px;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+  text-align: center;
+  cursor: text;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.to-app .to-drift-input::-webkit-outer-spin-button,
+.to-app .to-drift-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.to-app .to-drift-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.to-app .to-drift-input:hover {
+  border-color: var(--line-2);
+  background: var(--surface);
+}
+
+.to-app .to-drift-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+/* Custom mode: the fields stay visibly editable, without a ring until focused. */
+.to-app .to-drift-input.is-custom {
+  border-color: var(--line-2);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.to-app .to-drift-input.is-custom:hover,
+.to-app .to-drift-input.is-custom:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.to-app .to-drift-input.is-invalid {
+  border-color: var(--to-unmapped-solid);
+  background: var(--to-unmapped-soft);
+  box-shadow: none;
+}
+
+.to-app .to-token-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-app .to-token {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.to-app .to-token:hover {
+  padding-right: 24px;
+  background: var(--row-hover);
+}
+
+.to-app .to-token:focus-within,
+.to-app .to-token.is-spot {
+  background: var(--row-hover);
+}
+
+/* The last token in a column cannot be removed, so the row does not shift. */
+.to-app .to-token.is-sole:hover,
+.to-app .to-token-draft:hover {
+  padding-right: 4px;
+}
+
+/* Quiet gap between surface colors and the accent colors.
+   A 1px line, centered, so the space above and below matches. */
+.to-app .to-token-split {
+  height: 1px;
+  margin: 6px 0;
+  border: 0;
+  background: var(--line);
+}
+
+.to-app .to-token-name {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.to-app .to-token-name:hover,
+.to-app .to-token-name:focus-visible,
+.to-app .to-token.is-spot .to-token-name {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+/* Edited token: a small accent dot after the name */
+.to-app .to-token.is-changed .to-token-name::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+
+/* Token values are quiet text until the row is hovered or the field is focused. */
+.to-app .to-token-input {
+  width: 10ch;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  cursor: text;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.to-app .to-token-input.to-token-num,
+.to-app .to-token-input[type="number"] {
+  width: 40px;
+  padding: 0 2px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.to-app .to-token-input::-webkit-outer-spin-button,
+.to-app .to-token-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.to-app .to-token:hover .to-token-input,
+.to-app .to-token-input:focus {
+  border-color: var(--line-2);
+  background: var(--surface);
+}
+
+.to-app .to-token-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+/* Hover-only remove, parked on the far right. Hidden again while the value is being edited. */
+.to-app .to-token-remove {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 16px;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.to-app .to-token:hover .to-token-remove,
+.to-app .to-token-remove:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.to-app .to-token:hover:has(.to-token-input:focus) .to-token-remove,
+.to-app .to-token.is-editing .to-token-remove,
+.to-app .to-token.is-editing:hover .to-token-remove,
+.to-app .to-token:hover .to-token-remove:disabled,
+.to-app .to-token-remove:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.to-app .to-token-remove:hover,
+.to-app .to-token-remove:focus-visible {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+
+/* + Add keeps its height at rest so a column never jumps, and only appears on that column. */
+.to-app .to-token-add {
+  display: inline-flex;
+  align-items: center;
+  margin: 6px 0 0;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity 150ms ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.to-app .to-token-group:hover > .to-token-add,
+.to-app .to-token-group:focus-within > .to-token-add {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+
+.to-app .to-token-group:hover > .to-token-add:hover,
+.to-app .to-token-group:focus-within > .to-token-add:hover,
+.to-app .to-token-add:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+@media (hover: none) {
+  .to-app .to-token-add,
+  .to-app .to-token-group:hover > .to-token-add,
+  .to-app .to-token-group:focus-within > .to-token-add {
+    opacity: 0.55;
+    pointer-events: auto;
+  }
+
+  .to-app .to-token-add:hover,
+  .to-app .to-token-add:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* The inline row for a token that has not been saved yet. */
+.to-app .to-draft-name,
+.to-app .to-token-draft .to-token-input {
+  border-color: var(--line-2);
+  background: var(--surface);
+}
+
+.to-app .to-draft-name {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.to-app .to-draft-name::placeholder,
+.to-app .to-token-draft .to-token-input::placeholder {
+  color: var(--faint);
+}
+
+.to-app .to-draft-name:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.to-app .to-draft-name.is-invalid,
+.to-app .to-token-draft .to-token-input.is-invalid,
+.to-app .to-token-input.is-invalid {
+  border-color: var(--to-unmapped-solid);
+  box-shadow: 0 0 0 3px var(--to-unmapped-soft);
+}
+
+.to-app .to-token-unit {
+  margin-left: -6px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The swatch is the button. The native picker sits off the row and opens from it. */
+.to-app .to-token-swatch {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.to-app .to-token-swatch:hover,
+.to-app .to-token-swatch:focus-visible {
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.to-app .to-token-picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* =========================================================================
+ * 6. PREVIEW: SCORE, CANVAS, AND OVERLAY
+ * ======================================================================= */
+
+/* Canvas header: title on the left, capture switcher on the right */
+.to-app .to-panel-head.to-canvas-head {
+  align-items: center;
+  padding: 16px 24px;
+}
+
+/* Build snapshot row, directly under the canvas title */
+.to-app .to-build-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.to-app .to-build-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.to-app .to-build-file {
+  margin-left: auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+/* Segmented controls: All / Issues, Scenario, and Tolerance presets */
+.to-app .to-segmented {
+  display: inline-flex;
+  flex: none;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--surface-3);
+}
+
+.to-app .to-segmented button {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.to-app .to-segmented button:hover {
+  color: var(--text);
+}
+
+.to-app .to-segmented button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.to-app .to-segmented button.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--seg-shadow);
+}
+
+/* Coverage ring. It sits in the Findings summary, with "On token" under it. */
+.to-app .to-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.to-app .to-ring {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 56px;
+}
+
+.to-app .to-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.to-app .to-ring-track,
+.to-app .to-ring-seg {
+  fill: none;
+  stroke-width: 8;
+}
+
+.to-app .to-ring-track {
+  stroke: var(--surface-3);
+}
+
+.to-app .to-ring-seg {
+  stroke: var(--c);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.8s ease;
+}
+
+.to-app .to-ring-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.to-app .to-ring-number {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.to-app .to-score-label {
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* The canvas: a light, neutral artboard with a faint dot grid */
+.to-app .to-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 544px;
+  /* Top clears the toolbar. Right is where the callouts sit. */
+  padding: 72px 192px 40px 32px;
+  background-color: var(--surface-3);
+  background-image: radial-gradient(rgba(24, 24, 27, 0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+  color: var(--text);
+  color-scheme: light;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.to-app .to-stage.is-panning,
+.to-app .to-stage.is-panning * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* One toolbar across the top of the canvas:
+   [Overlay ● | − 100% + | ⊕]                    [All | Issues only] */
+.to-app .to-canvas-bar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 40px;
+  padding: 0 6px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--seg-shadow);
+  cursor: default;
+}
+
+.to-app .to-bar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.to-app .to-bar-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background: var(--line);
+}
+
+/* The overlay switch sits flat inside the toolbar */
+.to-app .to-bar-switch {
+  height: 24px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.to-app .to-bar-switch:hover {
+  background: var(--surface-3);
+}
+
+.to-app .to-bar-switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.to-app .to-bar-switch .to-switch-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.to-app .to-bar-switch[aria-checked="true"] .to-switch-label {
+  color: var(--text);
+}
+
+.to-app .to-zoom-btn,
+.to-app .to-zoom-value {
+  display: inline-grid;
+  place-items: center;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.to-app .to-zoom-btn {
+  width: 24px;
+  padding: 0;
+}
+
+.to-app .to-zoom-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.to-app .to-zoom-value {
+  min-width: 48px;
+  padding: 0 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.to-app .to-zoom-btn:hover,
+.to-app .to-zoom-value:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.to-app .to-zoom-btn:focus-visible,
+.to-app .to-zoom-value:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.to-app .to-zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+}
+
+/* Recenter turns accent-colored once the sample is off center */
+.to-app .to-zoom-btn.is-ready {
+  color: var(--accent);
+}
+
+/* The sample is centered; its card style comes from sample-data.js */
+.to-app .to-sample {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  color: #0f172a;
+  transform-origin: 50% 50%;
+}
+
+.to-app .to-sample button,
+.to-app .to-sample input {
+  margin: 0;
+  font-family: inherit;
+}
+
+.to-app .to-sample button {
+  cursor: pointer;
+}
+
+/* The overlay layer sits exactly on top of the canvas */
+.to-app .to-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.to-app .to-layer > * {
+  transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Overlay off: hide everything except an item you are pointing at */
+.to-app:not(.to-overlay-on) .to-layer > *:not(.is-active) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* One issue is in focus: fade the rest so it stands out. */
+.to-app .to-layer.has-focus > :not(.is-active) {
+  opacity: 0.35;
+}
+
+/* "Issues only": hide the outlines for exact matches */
+.to-app.to-issues-only .to-box[data-status="exact"]:not(.is-active):not(.is-spot) {
+  opacity: 0;
+}
+
+/* A token spotlight keeps matching outlines and fades everything else. */
+.to-app.is-spotting .to-sample [data-to-id].is-dim {
+  opacity: 0.35;
+}
+
+.to-app.is-spotting .to-box.is-dim,
+.to-app.is-spotting .to-note.is-dim,
+.to-app.is-spotting .to-leader.is-dim,
+.to-app.is-spotting .to-pin-dot.is-dim {
+  opacity: 0.35;
+}
+
+.to-app.is-spotting .to-box.is-spot {
+  opacity: 1;
+}
+
+/* Too narrow for a callout column: show outlines only, so nothing ever
+   sits on top of the sample. Details are still in the hover card. */
+.to-app .to-layer.is-compact .to-note,
+.to-app .to-layer.is-compact .to-leader,
+.to-app .to-layer.is-compact .to-pin-dot {
+  display: none;
+}
+
+/* Outline around each checked item. It sits 2px outside the item.
+   Radius is set in scanner.js so it follows the element's corners. */
+.to-app .to-box {
+  position: absolute;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+/* Resting outlines use the solid color at 60% so the canvas stays calm.
+   The fill is the soft tint. Hover and selection snap the outline to full. */
+.to-app .to-box[data-status="drifted"],
+.to-app .to-box[data-status="unmapped"] {
+  border: 1px dashed color-mix(in srgb, var(--c) 60%, transparent);
+  background: var(--c-soft);
+}
+
+.to-app .to-box[data-status="exact"] {
+  border: 1px solid color-mix(in srgb, var(--c) 32%, transparent);
+  background: transparent;
+}
+
+.to-app .to-box[data-status="exact"].is-active {
+  border: 1.5px solid var(--c);
+  background: var(--to-exact-soft);
+}
+
+.to-app .to-box.is-active {
+  border: 1.5px solid var(--c);
+  background: var(--c-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 24%, transparent);
+  opacity: 1;
+}
+
+/* Hairline joining an item's pin dot to its callout. Quiet until active. */
+.to-app .to-leader {
+  position: absolute;
+  height: 1px;
+  margin-top: -0.5px;
+  background: rgba(24, 24, 27, 0.22);
+  transform-origin: 0 50%;
+}
+
+.to-app .to-leader.is-active {
+  background: var(--c);
+}
+
+/* Pin dot: where the connector touches the item's outline */
+.to-app .to-pin-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px var(--surface-3);
+}
+
+.to-app .to-pin-dot.is-active {
+  box-shadow: 0 0 0 2px var(--surface-3);
+  z-index: 2;
+}
+
+/* Slow ring on the selected pin only. Reduced motion turns this off. */
+.to-app .to-pin-dot.is-active::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--c);
+  border-radius: 50%;
+  animation: to-pulse 2.2s ease-out infinite;
+}
+
+@keyframes to-pulse {
+  0%   { transform: scale(0.7); opacity: 0.55; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Spec callout tag: [● Body text  2] */
+.to-app .to-note {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 6px 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.to-app .to-note.is-active {
+  border-color: var(--c);
+  background: var(--surface);
+  box-shadow: 0 6px 16px rgba(24, 24, 27, 0.1);
+  z-index: 2;
+}
+
+.to-app .to-note-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.to-app .to-note-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--c-soft);
+  color: var(--c-ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+ * 7. SUMMARY: FINDINGS
+ * ======================================================================= */
+
+/* Ring on the left, four category bars on the right */
+.to-app .to-health {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.to-app .to-breakdown {
+  display: grid;
+  gap: 8px;
+}
+
+.to-app .to-break-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+}
+
+.to-app .to-break-name {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.to-app .to-break-bar {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.to-app .to-break-seg {
+  height: 100%;
+  background: var(--c);
+  transform-origin: left center;
+  animation: to-grow 0.8s ease both;
+}
+
+@keyframes to-grow {
+  from { transform: scaleX(0); }
+}
+
+.to-app .to-break-value {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Filter buttons */
+.to-app .to-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 16px 24px 8px;
+}
+
+.to-app .to-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.to-app .to-tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.to-app .to-tab:hover {
+  border-color: var(--line-2);
+  color: var(--text);
+}
+
+.to-app .to-tab.is-active {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.to-app .to-tab-count {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.to-app .to-tab.is-active .to-tab-count {
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* One quiet line under the filters. It changes with the active pill. */
+.to-app .to-filter-note {
+  margin: 0;
+  padding: 2px 24px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* "Filtered by space-4 ×" while a token name is spotlighting the canvas. */
+.to-app .to-spot-bar {
+  padding: 0 24px 8px;
+}
+
+.to-app .to-spot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 2px 0 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.to-app .to-spot-clear {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.to-app .to-spot-clear:hover,
+.to-app .to-spot-clear:focus-visible {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+/* The list of findings */
+.to-app .to-findings {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 auto;
+  align-content: start;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 24px 24px;
+  overflow: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+
+.to-app .to-findings > li {
+  animation: to-rise 0.3s ease both;
+}
+
+@keyframes to-rise {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* One finding: name row, then a single mapping line. */
+.to-app .to-finding {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.to-app .to-finding:hover {
+  border-color: var(--line-2);
+  background: var(--surface-2);
+}
+
+.to-app .to-finding-top,
+.to-app .to-finding-map {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.to-app .to-finding-id {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.to-app .to-finding-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c);
+  align-self: center;
+  flex: none;
+}
+
+.to-app .to-finding-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.to-app .to-finding-prop {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.to-app .to-finding-status {
+  margin-left: auto;
+  color: var(--c-ink);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: help;
+  text-decoration: underline dotted transparent;
+  text-underline-offset: 3px;
+}
+
+.to-app .to-finding-status:hover {
+  text-decoration-color: currentColor;
+}
+
+.to-app .to-finding-map {
+  padding-left: 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.to-app .to-finding-eq {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.to-app .to-finding-found {
+  color: var(--text);
+}
+
+.to-app .to-finding[data-status="drifted"] .to-finding-found,
+.to-app .to-finding[data-status="unmapped"] .to-finding-found {
+  color: var(--c-ink);
+}
+
+.to-app .to-finding-arrow,
+.to-app .to-finding-token,
+.to-app .to-finding-delta {
+  color: var(--muted);
+}
+
+.to-app .to-finding-delta {
+  margin-left: auto;
+  color: var(--faint);
+}
+
+.to-app .to-finding-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent);
+  flex: none;
+}
+
+.to-app .to-empty {
+  padding: 32px 0;
+  color: var(--faint);
+  text-align: center;
+}
+
+/* v1.0 Clean, with the Issues filter on: a deliberate all-clear, not a blank list. */
+.to-app .to-empty-clean {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.to-app .to-empty-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--to-exact-soft);
+  color: var(--to-exact-text);
+}
+
+.to-app .to-empty-clean p {
+  margin: 0;
+}
+
+/* =========================================================================
+ * 8. HOVER CARD
+ * A quiet inspect panel: issues first, exact matches faded underneath.
+ * ======================================================================= */
+
+.to-app .to-tip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  min-width: 280px;
+  width: max-content;
+  max-width: min(400px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--tip-shadow);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.to-app .to-tip.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.to-app .to-tip-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.to-app .to-tip-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* "2 drifted" or "All on token". Text only, no pill. */
+.to-app .to-tip-status {
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.to-app .to-tip-status [data-status] {
+  color: var(--c-ink);
+}
+
+.to-app .to-tip-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-app .to-tip-rule {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--line);
+}
+
+.to-app .to-tip-row {
+  display: grid;
+  grid-template-columns: 6px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+/* Passing values stay readable, but they step back. */
+.to-app .to-tip-row[data-status="exact"] {
+  opacity: 0.55;
+}
+
+.to-app .to-tip-mark {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.to-app .to-tip-dot {
+  background: var(--c);
+}
+
+.to-app .to-tip-prop {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.to-app .to-tip-val {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Only the off-token value takes the status color. */
+.to-app .to-tip-row[data-status="drifted"] .to-tip-found,
+.to-app .to-tip-row[data-status="unmapped"] .to-tip-found {
+  color: var(--c-ink);
+}
+
+.to-app .to-tip-sep,
+.to-app .to-tip-token {
+  color: var(--muted);
+}
+
+.to-app .to-tip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+/* =========================================================================
+ * 9. HOW IT WORKS AND FOOTER
+ * ======================================================================= */
+
+.to-app .to-how {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 40px 48px;
+}
+
+.to-app .to-how .to-section-label {
+  margin-bottom: 16px;
+}
+
+.to-app .to-how-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.to-app .to-how-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.to-app .to-how-step {
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.to-app .to-how-card h3 {
+  margin: 8px 0;
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+.to-app .to-how-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.to-app .to-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 40px 40px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.to-app .to-footer code {
+  color: var(--muted);
+}
+
+/* =========================================================================
+ * 10. SMALL SCREENS AND REDUCED MOTION
+ * ======================================================================= */
+
+@media (min-width: 1041px) {
+  /* Don't let the findings list make its card taller than the canvas. */
+  .to-app .to-findings-panel {
+    height: 0;
+    min-height: 100%;
+  }
+}
+
+@media (max-width: 1040px) {
+  .to-app .to-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .to-app .to-tokens {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .to-app .to-token-group:nth-child(3) {
+    border-left: 0;
+  }
+  .to-app .to-token-group:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 720px) {
+  .to-app .to-nav,
+  .to-app .to-hero,
+  .to-app .to-workspace,
+  .to-app .to-how,
+  .to-app .to-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .to-app .to-nav .to-switch-label {
+    display: none;
+  }
+  .to-app .to-hero {
+    padding-top: 16px;
+    padding-bottom: 12px;
+  }
+  .to-app .to-hero-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  /* On phones the paragraph is shorter and tighter so it doesn't push the tool down. */
+  .to-app .to-hero-text {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .to-app .to-panel-head,
+  .to-app .to-token-group,
+  .to-app .to-health,
+  .to-app .to-build-bar {
+    padding: 16px;
+  }
+  .to-app .to-build-bar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .to-app .to-health {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+  .to-app .to-tabs {
+    padding: 16px 16px 8px;
+  }
+  .to-app .to-filter-note {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .to-app .to-findings {
+    padding: 8px 16px 16px;
+  }
+  .to-app .to-tokens {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .to-app .to-token-group + .to-token-group {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .to-app .to-stage {
+    padding: 72px 16px 24px;
+  }
+  .to-app .to-canvas-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 40px;
+    padding: 4px 6px;
+  }
+  .to-app .to-canvas-bar #to-show {
+    margin-left: auto;
+  }
+  .to-app .to-zoom-value {
+    min-width: 40px;
+  }
+  .to-app .to-bar-switch .to-switch-label {
+    display: none;
+  }
+  .to-app .to-how-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .to-app *,
+  .to-app *::before,
+  .to-app *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
