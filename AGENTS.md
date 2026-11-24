@@ -13,7 +13,7 @@ Deploy only those four files. `README.md` and `AGENTS.md` stay in the workspace 
 
 ## Theme
 
-Semantic variables live on `.to-app`. Dark mode is `data-theme="dark"` on `.to-app` and is stored in `localStorage` under `to-theme`. The canvas (`.to-stage`) keeps the light palette in both modes so the sample and its callouts do not change.
+Semantic variables live on `.to-app`. Dark mode is `data-theme="dark"` on `.to-app`. With no manual choice it follows `prefers-color-scheme: dark` on load and live on `change`. The Dark mode switch sets a manual session override (`sessionStorage` key `to-theme`, `light` or `dark`) that OS changes do not clobber. Reset defaults clears the override and re-syncs to the system preference. The canvas (`.to-stage`) keeps the light palette in both modes so the sample and its callouts do not change.
 
 Status colors are two-tier Emerald / Amber / Rose:
 
@@ -34,7 +34,13 @@ Spacing follows an 8px rhythm. Token names and values use monospace and tabular 
 - New spacing, type, and radius tokens sort by pixel value. New colors append to Semantic Accents, below the hairline that separates them from Neutrals/Surfaces. Color swatches are 17px and open a native color input.
 - Clicking a token name spotlights every element that resolves to that token, including exact matches while Issues only is on, and dims everything else to 35% opacity. Findings filter to that token and show a dismissible chip. Clear it by clicking the name again, the chip, switching capture or build, or pressing Escape.
 - The token panel is open on load and can collapse to a summary of color dots plus `Spacing`, `Type`, and `Radius` ranges. Collapse is not persisted.
-- Reset defaults returns tokens and tolerance to the original Standard set and hides itself when nothing is dirty.
+- Reset defaults returns tokens, tolerance, capture, and build to the originals, clears dismissed exceptions and the theme override, and hides itself when nothing is dirty.
+
+## Triage (v1.1)
+
+- Drifted rows show a quiet hint line, `→ Use <token> (<value>)`. Unmapped rows show `Investigate · Intentional override or missing token?` and never guess a token. Exact rows have no hint. The hint line has a fixed height, so rows do not shift.
+- `Dismiss` appears on Drifted and Unmapped rows on hover or keyboard focus (always softly visible on touch). A dismissed finding leaves the active counts, tabs, score, and Canvas pins, and moves to a collapsible `Dismissed exceptions (N)` section under the list with a per-row `Restore`. Dismissals clear on capture or build switch and on Reset defaults.
+- `Copy handoff` in the Findings header copies Markdown for active issues only (capture, build, tolerance, `### Suggested token fixes`, `### Needs investigation`, and `_N dismissed exception(s) omitted._`). It is disabled with no active issues, uses `navigator.clipboard.writeText()` with a hidden-textarea fallback, and shows `Copied` for about 2 seconds in place without layout shift.
 
 ## Preview matrix
 
