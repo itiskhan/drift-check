@@ -1136,7 +1136,7 @@
     if (reading.status === 'drifted') {
       return '\u2192 Use ' + nearestText(reading);
     }
-    return 'Investigate \u00b7 Intentional override or missing token?';
+    return 'Review override or add token';
   }
 
   // One finding card: who and what on the first line, the mapping on the second.
