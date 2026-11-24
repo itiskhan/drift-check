@@ -38,7 +38,7 @@ Spacing follows an 8px rhythm. Token names and values use monospace and tabular 
 
 ## Triage (v1.1)
 
-- Drifted rows show a quiet hint line, `→ Use <token> (<value>)`. Unmapped rows show `Review override or add token` and never guess a token. Exact rows have no hint. The hint line has a fixed height, so rows do not shift.
+- Drifted and Unmapped findings are two-zone cards. The `<li class="to-finding-item">` owns the border, background, and hover frame. The borderless `.to-finding` button is the diagnosis on top. Below a hairline, an in-flow `.to-finding-footer` (min-height 44px, no absolute positioning, no nested buttons) holds an icon-led cue and `Dismiss`. Drifted shows an arrow icon and `Use <token> (<value>)` in monospace. Unmapped shows an alert-triangle icon and `Review override or add token`, and never guesses a token. Exact cards stay compact with no footer. Hovering anywhere on the card highlights its Canvas element.
 - `Dismiss` appears on Drifted and Unmapped rows on hover or keyboard focus (always softly visible on touch). A dismissed finding leaves the active counts, tabs, score, and Canvas pins, and moves to a collapsible `Dismissed exceptions (N)` section under the list with a per-row `Restore`. Dismissals clear on capture or build switch and on Reset defaults.
 - `Copy handoff` in the Findings header copies Markdown for active issues only (capture, build, tolerance, `### Suggested token fixes`, `### Needs investigation`, and `_N dismissed exception(s) omitted._`). It is disabled with no active issues, uses `navigator.clipboard.writeText()` with a hidden-textarea fallback, and shows `Copied` for about 2 seconds in place without layout shift.
 
