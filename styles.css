@@ -2178,13 +2178,13 @@
   color: var(--text);
 }
 
-.to-app .to-finding-dismiss:hover {
+.to-app .to-finding-item .to-finding-dismiss:hover {
   border-color: var(--line-2);
   background: var(--surface);
   color: var(--text);
 }
 
-.to-app .to-finding-dismiss:focus-visible {
+.to-app .to-finding-item .to-finding-dismiss:focus-visible {
   border-color: var(--accent);
   background: var(--surface);
   color: var(--text);
