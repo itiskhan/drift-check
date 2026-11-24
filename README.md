@@ -2,7 +2,7 @@
 
 A zero-dependency design token auditor. Inspects live rendered CSS via `window.getComputedStyle()` against an editable token set to classify every property as exact, drifted, or unmapped.
 
-**Live tool:** [saadnama.com/drift-check](https://saadnama.com/drift-check/)
+**Live tool:** [https://drift-check.saadnama.com](https://drift-check.saadnama.com)
 
 ## Capabilities
 
