@@ -1585,22 +1585,44 @@
 }
 
 /* One finding: name row, then a single mapping line. */
-.to-app .to-finding {
-  display: grid;
-  gap: 4px;
-  width: 100%;
-  padding: 10px 12px;
+.to-app .to-findings {
+  grid-auto-rows: max-content;
+}
+
+.to-app .to-finding-item {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
-  text-align: left;
-  cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.to-app .to-finding:hover {
+.to-app .to-finding-item:hover,
+.to-app .to-finding-item:focus-within {
   border-color: var(--line-2);
+}
+
+.to-app .to-finding-item:hover {
   background: var(--surface-2);
+}
+
+/* Top zone: the diagnosis. Borderless; the card carries the frame. */
+.to-app .to-finding {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.to-app .to-finding:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .to-app .to-finding-top,
@@ -2055,38 +2077,62 @@
   white-space: nowrap;
 }
 
-/* One quiet line under the mapping. Same height on every issue row. */
-.to-app .to-finding-hint {
-  display: block;
-  height: 16px;
-  margin-left: 14px;
-  padding: 0 72px 0 8px;
-  overflow: hidden;
-  border-left: 2px solid color-mix(in srgb, var(--c) 32%, transparent);
+/* Bottom zone: the action. Divided, calm, same height on every issue card. */
+.to-app .to-finding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px 8px 14px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-2) 55%, var(--surface));
+}
+
+.to-app .to-finding-cue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
+  transition: color 0.2s ease;
+}
+
+.to-app .to-finding-cue-icon {
+  display: inline-flex;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: color-mix(in srgb, var(--c) 60%, transparent);
+  transition: color 0.2s ease;
+}
+
+.to-app .to-finding-cue-icon svg {
+  flex: none;
+}
+
+.to-app .to-finding-cue-text {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-/* The rule sharpens with the row; it never becomes a box. */
-.to-app .to-finding:hover .to-finding-hint,
-.to-app .to-finding:focus-visible .to-finding-hint,
-.to-app .to-finding:active .to-finding-hint,
-.to-app .to-finding-item:focus-within .to-finding-hint {
-  border-left-color: color-mix(in srgb, var(--c) 72%, transparent);
-  color: var(--text);
-}
-
-.to-app .to-finding[data-status="drifted"] .to-finding-hint {
+.to-app .to-finding-item[data-status="drifted"] .to-finding-cue-text {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
 
-.to-app .to-finding-item {
-  position: relative;
+.to-app .to-finding-item:hover .to-finding-cue,
+.to-app .to-finding-item:focus-within .to-finding-cue {
+  color: var(--text);
+}
+
+.to-app .to-finding-item:hover .to-finding-cue-icon,
+.to-app .to-finding-item:focus-within .to-finding-cue-icon {
+  color: var(--c);
 }
 
 .to-app .to-link-btn {
@@ -2113,36 +2159,43 @@
   box-shadow: 0 0 0 3px var(--focus);
 }
 
-/* Dismiss sits on the hint line and appears on row hover or keyboard focus. */
+/* Dismiss: an in-flow flex item. Border is always 1px, so states never shift. */
 .to-app .to-finding-dismiss {
-  position: absolute;
-  right: 8px;
-  bottom: 6px;
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
   border: 1px solid transparent;
-  opacity: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.to-app .to-finding-dismiss:hover {
+.to-app .to-finding-item:hover .to-finding-dismiss,
+.to-app .to-finding-item:focus-within .to-finding-dismiss {
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.to-app .to-finding-item .to-finding-dismiss:hover {
   border-color: var(--line-2);
   background: var(--surface);
   color: var(--text);
 }
 
-.to-app .to-finding-dismiss:focus-visible {
+.to-app .to-finding-item .to-finding-dismiss:focus-visible {
   border-color: var(--accent);
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 0 0 3px var(--focus);
 }
 
-.to-app .to-finding-item:hover .to-finding-dismiss,
-.to-app .to-finding-item:focus-within .to-finding-dismiss,
-.to-app .to-finding-dismiss:focus-visible {
-  opacity: 1;
-}
-
 @media (hover: none) {
-  .to-app .to-finding-dismiss { opacity: 0.7; }
+  .to-app .to-finding-dismiss {
+    border-color: var(--line);
+    color: var(--text);
+  }
 }
 
 .to-app .to-dismissed {

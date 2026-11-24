@@ -1131,12 +1131,24 @@
     return reading.token.name + ' (' + reading.tokenText + ')';
   }
 
-  // The quiet third line: a suggested token for Drifted, a question for Unmapped.
-  function triageHint(reading) {
-    if (reading.status === 'drifted') {
-      return '\u2192 Use ' + nearestText(reading);
-    }
-    return 'Review override or add token';
+  // Icon-led cue for the card footer. Drifted points at a token; Unmapped asks
+  // for a human decision and never guesses one.
+  var CUE_ICON = {
+    drifted: '<path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/>',
+    unmapped: '<path d="M8 2.5 14 13H2L8 2.5Z"/><path d="M8 6.5v3M8 11.5v.01"/>'
+  };
+
+  function makeCue(reading) {
+    var cue = make('span', 'to-finding-cue');
+    var icon = make('span', 'to-finding-cue-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      CUE_ICON[reading.status] + '</svg>';
+    cue.appendChild(icon);
+    cue.appendChild(make('span', 'to-finding-cue-text',
+      reading.status === 'drifted' ? 'Use ' + nearestText(reading) : 'Review override or add token'));
+    return cue;
   }
 
   // One finding card: who and what on the first line, the mapping on the second.
@@ -1171,12 +1183,6 @@
     if (delta) { map.appendChild(make('span', 'to-finding-delta', delta)); }
     button.appendChild(map);
 
-    if (reading.status !== 'exact') {
-      button.appendChild(make('span', 'to-finding-hint', triageHint(reading)));
-    }
-
-    button.addEventListener('mouseenter', function () { handlers.enter(reading); });
-    button.addEventListener('mouseleave', function () { handlers.leave(reading); });
     button.addEventListener('focus', function () { handlers.enter(reading); });
     button.addEventListener('blur', function () { handlers.leave(reading); });
     button.addEventListener('click', function () { handlers.pick(reading); });
@@ -1337,13 +1343,20 @@
       var li = make('li');
       li.style.animationDelay = Math.min(index * 35, 400) + 'ms';
       li.className = 'to-finding-item';
+      li.setAttribute('data-status', reading.status);
       li.appendChild(makeFinding(reading, handlers, tolerance));
+      // Hover tracks the whole card, so moving down to Dismiss keeps the Canvas highlight.
+      li.addEventListener('mouseenter', function () { handlers.enter(reading); });
+      li.addEventListener('mouseleave', function () { handlers.leave(reading); });
       if (reading.status !== 'exact') {
+        var footer = make('div', 'to-finding-footer');
+        footer.appendChild(makeCue(reading));
         var dismiss = make('button', 'to-link-btn to-finding-dismiss', 'Dismiss');
         dismiss.type = 'button';
         dismiss.setAttribute('aria-label', 'Dismiss ' + reading.elementLabel + ' ' + tipLabel(reading.property));
         dismiss.addEventListener('click', function () { handlers.dismiss(reading); });
-        li.appendChild(dismiss);
+        footer.appendChild(dismiss);
+        li.appendChild(footer);
       }
       container.appendChild(li);
     });
@@ -1446,7 +1459,7 @@
     // are handled by pick(), which opens that item instead.
     document.addEventListener('pointerdown', function (event) {
       if (!tip.classList.contains('is-visible')) { return; }
-      if (event.target.closest('.to-finding, .to-finding-dismiss, #to-tip')) { return; }
+      if (event.target.closest('.to-finding-item, #to-tip')) { return; }
       closeTip();
     });
 
