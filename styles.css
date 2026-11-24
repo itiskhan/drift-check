@@ -2058,13 +2058,26 @@
 /* One quiet line under the mapping. Same height on every issue row. */
 .to-app .to-finding-hint {
   display: block;
-  padding: 0 64px 0 14px;
+  height: 16px;
+  margin-left: 14px;
+  padding: 0 72px 0 8px;
   overflow: hidden;
+  border-left: 2px solid color-mix(in srgb, var(--c) 32%, transparent);
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+/* The rule sharpens with the row; it never becomes a box. */
+.to-app .to-finding:hover .to-finding-hint,
+.to-app .to-finding:focus-visible .to-finding-hint,
+.to-app .to-finding:active .to-finding-hint,
+.to-app .to-finding-item:focus-within .to-finding-hint {
+  border-left-color: color-mix(in srgb, var(--c) 72%, transparent);
+  color: var(--text);
 }
 
 .to-app .to-finding[data-status="drifted"] .to-finding-hint {
@@ -2105,7 +2118,21 @@
   position: absolute;
   right: 8px;
   bottom: 6px;
+  border: 1px solid transparent;
   opacity: 0;
+}
+
+.to-app .to-finding-dismiss:hover {
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.to-app .to-finding-dismiss:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
 .to-app .to-finding-item:hover .to-finding-dismiss,
