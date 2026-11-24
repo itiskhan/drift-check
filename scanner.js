@@ -1126,6 +1126,19 @@
       ' your ' + spec.sign + limit + 'px ' + KIND_LABEL[reading.kind] + ' tolerance.';
   }
 
+  // "space-4 (16px)" or "ink-700 (#1f2937)". Used by hints and the handoff.
+  function nearestText(reading) {
+    return reading.token.name + ' (' + reading.tokenText + ')';
+  }
+
+  // The quiet third line: a suggested token for Drifted, a question for Unmapped.
+  function triageHint(reading) {
+    if (reading.status === 'drifted') {
+      return '\u2192 Use ' + nearestText(reading);
+    }
+    return 'Investigate \u00b7 Intentional override or missing token?';
+  }
+
   // One finding card: who and what on the first line, the mapping on the second.
   function makeFinding(reading, handlers, tolerance) {
     var button = make('button', 'to-finding');
@@ -1157,6 +1170,10 @@
     var delta = findingDelta(reading);
     if (delta) { map.appendChild(make('span', 'to-finding-delta', delta)); }
     button.appendChild(map);
+
+    if (reading.status !== 'exact') {
+      button.appendChild(make('span', 'to-finding-hint', triageHint(reading)));
+    }
 
     button.addEventListener('mouseenter', function () { handlers.enter(reading); });
     button.addEventListener('mouseleave', function () { handlers.leave(reading); });
@@ -1221,9 +1238,90 @@
     return li;
   }
 
+  // One row in the Dismissed exceptions list, with a one-click Restore.
+  function makeDismissed(reading, onRestore) {
+    var li = make('li', 'to-dismissed-row');
+    li.setAttribute('data-status', reading.status);
+    li.appendChild(make('span', 'to-finding-dot'));
+    var text = make('span', 'to-dismissed-text');
+    text.appendChild(make('span', 'to-finding-name', reading.elementLabel));
+    text.appendChild(make('span', 'to-finding-prop', tipLabel(reading.property)));
+    text.appendChild(make('span', 'to-dismissed-value', reading.found));
+    li.appendChild(text);
+    var restore = make('button', 'to-link-btn', 'Restore');
+    restore.type = 'button';
+    restore.setAttribute('aria-label', 'Restore ' + reading.elementLabel + ' ' + tipLabel(reading.property));
+    restore.addEventListener('click', function () { onRestore(reading); });
+    li.appendChild(restore);
+    return li;
+  }
+
+  function drawDismissed(readings, onRestore) {
+    var box = document.getElementById('to-dismissed');
+    var list = document.getElementById('to-dismissed-list');
+    var gone = readings.filter(function (r) { return r.dismissed; });
+    box.hidden = !gone.length;
+    document.getElementById('to-dismissed-count').textContent = 'Dismissed exceptions (' + gone.length + ')';
+    list.innerHTML = '';
+    gone.forEach(function (reading) { list.appendChild(makeDismissed(reading, onRestore)); });
+  }
+
+  // Markdown for the active (not dismissed) issues.
+  function handoffMarkdown(readings, meta) {
+    var active = readings.filter(function (r) { return r.status !== 'exact' && !r.dismissed; });
+    var gone = readings.filter(function (r) { return r.dismissed; }).length;
+    var drifted = active.filter(function (r) { return r.status === 'drifted'; });
+    var unmapped = active.filter(function (r) { return r.status === 'unmapped'; });
+    var lines = ['## Drift Check handoff', '',
+      '- **Capture:** ' + meta.capture,
+      '- **Build:** ' + meta.build,
+      '- **Tolerance:** ' + meta.tolerance, ''];
+    if (drifted.length) {
+      lines.push('### Suggested token fixes', '');
+      drifted.forEach(function (r) {
+        lines.push('- `' + r.elementLabel + '` \u00b7 ' + tipLabel(r.property) + ': `' + r.found +
+          '` \u2192 `' + nearestText(r) + '`');
+      });
+      lines.push('');
+    }
+    if (unmapped.length) {
+      lines.push('### Needs investigation', '');
+      unmapped.forEach(function (r) {
+        lines.push('- `' + r.elementLabel + '` \u00b7 ' + tipLabel(r.property) + ': `' + r.found +
+          '` \u2014 check whether this is an intentional override or a missing token.');
+      });
+      lines.push('');
+    }
+    if (gone) {
+      lines.push('_' + gone + ' dismissed exception' + (gone === 1 ? '' : 's') + ' omitted._');
+    }
+    return lines.join('\n').replace(/\n+$/, '') + '\n';
+  }
+
+  // Clipboard API first; a hidden textarea when it is unavailable or refused.
+  function copyText(text) {
+    function fallback() {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.setAttribute('aria-hidden', 'true');
+      area.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+      document.body.appendChild(area);
+      area.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+      document.body.removeChild(area);
+      return ok;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); });
+    }
+    return Promise.resolve(fallback());
+  }
+
   function drawFindings(container, readings, activeId, handlers, tolerance, buildId, spot) {
     var filter = FILTERS.filter(function (f) { return f.id === activeId; })[0];
-    var shown = readings.filter(filter.test);
+    var shown = readings.filter(function (r) { return !r.dismissed; }).filter(filter.test);
     if (spot) {
       shown = shown.filter(function (reading) {
         return reading.kind === spot.kind && reading.token && reading.token.name === spot.name;
@@ -1238,7 +1336,15 @@
     shown.forEach(function (reading, index) {
       var li = make('li');
       li.style.animationDelay = Math.min(index * 35, 400) + 'ms';
+      li.className = 'to-finding-item';
       li.appendChild(makeFinding(reading, handlers, tolerance));
+      if (reading.status !== 'exact') {
+        var dismiss = make('button', 'to-link-btn to-finding-dismiss', 'Dismiss');
+        dismiss.type = 'button';
+        dismiss.setAttribute('aria-label', 'Dismiss ' + reading.elementLabel + ' ' + tipLabel(reading.property));
+        dismiss.addEventListener('click', function () { handlers.dismiss(reading); });
+        li.appendChild(dismiss);
+      }
       container.appendChild(li);
     });
 
@@ -1306,6 +1412,13 @@
       showTip(tip, pinnedItem, anchor);
     }
 
+    // Exceptions the designer has accepted, keyed by element, property, status, and value.
+    var dismissed = {};
+    function dismissKey(reading) {
+      return [reading.item.element.getAttribute('data-to-id'), reading.property, reading.status, reading.found].join('|');
+    }
+    function restore(reading) { delete dismissed[dismissKey(reading)]; rescan(false); }
+
     var findingHandlers = {
       enter: function (reading) {
         if (pinnedItem) { return; }
@@ -1315,6 +1428,7 @@
         if (pinnedItem) { return; }
         setActive(items, null);
       },
+      dismiss: function (reading) { dismissed[dismissKey(reading)] = true; rescan(false); },
       pick: function (reading) {
         // Keep this card up until the person clicks somewhere else.
         // If the canvas is scrolled out of view, bring it back first.
@@ -1332,7 +1446,7 @@
     // are handled by pick(), which opens that item instead.
     document.addEventListener('pointerdown', function (event) {
       if (!tip.classList.contains('is-visible')) { return; }
-      if (event.target.closest('.to-finding, #to-tip')) { return; }
+      if (event.target.closest('.to-finding, .to-finding-dismiss, #to-tip')) { return; }
       closeTip();
     });
 
@@ -1418,10 +1532,52 @@
 
     function pickFilter(id) {
       activeFilter = id;
-      drawTabs(tabs, readings, activeFilter, pickFilter);
+      drawTabs(tabs, activeReadings(), activeFilter, pickFilter);
       drawFilterNote(activeFilter);
       drawFindings(findings, readings, activeFilter, findingHandlers, data.tolerance, activeBuild, spotlight);
+      drawDismissed(readings, restore);
+      paintHandoff();
     }
+
+    function activeReadings() {
+      return readings.filter(function (r) { return !r.dismissed; });
+    }
+
+    // Copy handoff: disabled with no active issues. "Copied" swaps in place.
+    var handoffButton = document.getElementById('to-handoff');
+    var handoffTimer = null;
+
+    function paintHandoff() {
+      var count = activeReadings().filter(function (r) { return r.status !== 'exact'; }).length;
+      handoffButton.disabled = count === 0;
+    }
+
+    function tolerancePhrase() {
+      var t = data.tolerance;
+      return 'Spacing \u00b1' + t.spacing + 'px \u00b7 Color \u0394' + t.color +
+        ' \u00b7 Type \u00b1' + t.type + 'px \u00b7 Radius \u00b1' + t.radius + 'px' +
+        ' (' + (activePreset === 'custom' ? 'Custom' : presetById(activePreset).label) + ')';
+    }
+
+    handoffButton.addEventListener('click', function () {
+      if (handoffButton.disabled) { return; }
+      var markdown = handoffMarkdown(readings, {
+        capture: byId(data.captures, activeCapture).label,
+        build: byId(data.builds, activeBuild).label,
+        tolerance: tolerancePhrase()
+      });
+      copyText(markdown).then(function (ok) {
+        if (!ok) { return; }
+        var status = document.getElementById('to-handoff-status');
+        handoffButton.classList.add('is-copied');
+        status.textContent = 'Copied';
+        window.clearTimeout(handoffTimer);
+        handoffTimer = window.setTimeout(function () {
+          handoffButton.classList.remove('is-copied');
+          status.textContent = '';
+        }, 2000);
+      });
+    });
 
     // Callout tags are rebuilt on every scan, so their hover has to be too.
     function wireNotes() {
@@ -1446,6 +1602,20 @@
       var scan = scanAll(sample, data);
       readings = scan.readings;
       items = scan.items;
+      // Dismissed readings leave the active counts, and pins reflect what is left.
+      readings.forEach(function (reading) { reading.dismissed = !!dismissed[dismissKey(reading)]; });
+      items.forEach(function (item) {
+        var worst = 'exact';
+        var issues = 0;
+        item.readings.forEach(function (reading) {
+          if (reading.dismissed || reading.status === 'exact') { return; }
+          issues += 1;
+          if (STATUS_RANK[reading.status] > STATUS_RANK[worst]) { worst = reading.status; }
+        });
+        item.worst = worst;
+        item.issues = issues;
+        item.element.setAttribute('data-to-status', worst);
+      });
       buildOverlay(layer, items);
       wireNotes();
       reposition();
@@ -1455,8 +1625,9 @@
         readings.length + ' values checked across ' + items.length + ' elements';
       if (spotlight && !spotlightAlive()) { spotlight = null; }
       pickFilter(activeFilter);
-      drawBreakdown(document.getElementById('to-breakdown'), readings);
-      drawScore(readings, animate);
+      drawBreakdown(document.getElementById('to-breakdown'), activeReadings());
+      drawScore(activeReadings(), animate);
+      paintReset();
       paintSpotlight();
     }
 
@@ -1618,7 +1789,10 @@
         saved.forEach(function (token) { byName[token.name] = token.value; });
         return current.some(function (token) { return byName[token.name] !== token.value; });
       });
-      document.getElementById('to-reset').hidden = !(toleranceDirty || tokensDirty);
+      var viewDirty = activeCapture !== data.defaultCapture || activeBuild !== data.defaultBuild;
+      var dismissedDirty = Object.keys(dismissed).length > 0;
+      document.getElementById('to-reset').hidden =
+        !(toleranceDirty || tokensDirty || viewDirty || dismissedDirty || !!themeOverride);
     }
 
     function enterCustom() {
@@ -1659,7 +1833,12 @@
       data.tokens = copy(defaultTokens);
       applyPreset(data.defaultPreset);
       renderTokens();
-      rescan(false);
+      activeCapture = data.defaultCapture;
+      activeBuild = data.defaultBuild;
+      themeOverride = null;
+      storeOverride(null);
+      syncTheme();
+      showFrame();   // also clears dismissed exceptions and the spotlight
     });
 
     // 4. Capture and build. Either switch redraws the sample and scans again.
@@ -1683,6 +1862,7 @@
 
     function showFrame() {
       spotlight = null;
+      dismissed = {};
       var capture = byId(data.captures, activeCapture);
       var build = byId(data.builds, activeBuild);
       paintSwitch(captureBar, 'data-capture', capture.id);
@@ -1946,9 +2126,7 @@
       }
     });
 
-    // 6b. The Dark mode switch in the top bar. Light is the default.
-    // The choice is remembered when the browser allows it (some block
-    // storage for files opened by double-click, so it is wrapped in try).
+    // 6b. The Dark mode switch in the top bar. It follows the system until clicked.
     var themeSwitch = document.getElementById('to-theme');
 
     function setDark(isDark) {
@@ -1956,14 +2134,41 @@
       themeSwitch.setAttribute('aria-checked', String(isDark));
     }
 
-    var savedTheme = null;
-    try { savedTheme = window.localStorage.getItem('to-theme'); } catch (err) { /* ignore */ }
-    setDark(savedTheme === 'dark');
+    // A manual choice lasts for the session (sessionStorage when allowed).
+    // With no choice, the page follows prefers-color-scheme live.
+    var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    var themeOverride = null;
+    try {
+      var stored = window.sessionStorage.getItem('to-theme');
+      if (stored === 'light' || stored === 'dark') { themeOverride = stored; }
+    } catch (err) { /* ignore */ }
+
+    function storeOverride(value) {
+      try {
+        if (value) { window.sessionStorage.setItem('to-theme', value); }
+        else { window.sessionStorage.removeItem('to-theme'); }
+      } catch (err) { /* ignore */ }
+    }
+
+    function syncTheme() {
+      if (themeOverride) { setDark(themeOverride === 'dark'); }
+      else { setDark(!!(darkQuery && darkQuery.matches)); }
+    }
+
+    syncTheme();
+    paintReset();
+
+    if (darkQuery) {
+      var onSystemChange = function () { if (!themeOverride) { syncTheme(); } };
+      if (darkQuery.addEventListener) { darkQuery.addEventListener('change', onSystemChange); }
+      else if (darkQuery.addListener) { darkQuery.addListener(onSystemChange); }
+    }
 
     themeSwitch.addEventListener('click', function () {
-      var nowDark = app.getAttribute('data-theme') !== 'dark';
-      setDark(nowDark);
-      try { window.localStorage.setItem('to-theme', nowDark ? 'dark' : 'light'); } catch (err) { /* ignore */ }
+      themeOverride = app.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      storeOverride(themeOverride);
+      syncTheme();
+      paintReset();
     });
 
     // 7. "All" / "Issues only" buttons above the canvas.

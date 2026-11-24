@@ -156,6 +156,12 @@
             <h2 class="to-panel-title" id="to-findings-title">Findings</h2>
             <p class="to-panel-sub" id="to-findings-sub"></p>
           </div>
+          <button type="button" class="to-btn to-ghost to-handoff" id="to-handoff" disabled
+                  title="Copy active drifted and unmapped findings as Markdown">
+            <span class="to-handoff-label to-handoff-rest">Copy handoff</span>
+            <span class="to-handoff-label to-handoff-done" aria-hidden="true">Copied</span>
+          </button>
+          <span class="to-sr" role="status" aria-live="polite" id="to-handoff-status"></span>
         </div>
 
         <!-- Coverage ring beside the four category bars -->
@@ -180,6 +186,10 @@
         <p class="to-filter-note" id="to-filter-note" aria-live="polite"></p>
         <div class="to-spot-bar" id="to-spot-bar" hidden></div>
         <ul class="to-findings" id="to-findings"></ul>
+        <details class="to-dismissed" id="to-dismissed" hidden>
+          <summary id="to-dismissed-count">Dismissed exceptions (0)</summary>
+          <ul class="to-dismissed-list" id="to-dismissed-list"></ul>
+        </details>
       </aside>
     </main>
 

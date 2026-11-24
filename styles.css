@@ -2041,3 +2041,163 @@
     transition: none !important;
   }
 }
+
+/* =========================================================================
+ * v1.1 TRIAGE: HINTS, DISMISS, DISMISSED LIST, COPY HANDOFF
+ * ======================================================================= */
+
+.to-app .to-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* One quiet line under the mapping. Same height on every issue row. */
+.to-app .to-finding-hint {
+  display: block;
+  padding: 0 64px 0 14px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.to-app .to-finding[data-status="drifted"] .to-finding-hint {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.to-app .to-finding-item {
+  position: relative;
+}
+
+.to-app .to-link-btn {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.to-app .to-link-btn:hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.to-app .to-link-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+/* Dismiss sits on the hint line and appears on row hover or keyboard focus. */
+.to-app .to-finding-dismiss {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  opacity: 0;
+}
+
+.to-app .to-finding-item:hover .to-finding-dismiss,
+.to-app .to-finding-item:focus-within .to-finding-dismiss,
+.to-app .to-finding-dismiss:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .to-app .to-finding-dismiss { opacity: 0.7; }
+}
+
+.to-app .to-dismissed {
+  flex: none;
+  margin: 0;
+  padding: 0 24px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.to-app .to-dismissed[hidden] { display: none; }
+
+.to-app .to-dismissed summary {
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.to-app .to-dismissed summary:hover { color: var(--text); }
+
+.to-app .to-dismissed-list {
+  display: grid;
+  gap: 4px;
+  max-height: 160px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.to-app .to-dismissed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.to-app .to-dismissed-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+.to-app .to-dismissed-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+
+.to-app .to-dismissed-row .to-link-btn { margin-left: auto; flex: none; }
+
+/* Copy handoff: both labels share one cell so the width never changes. */
+.to-app .to-handoff {
+  display: inline-grid;
+  flex: none;
+}
+
+.to-app .to-handoff-label {
+  grid-area: 1 / 1;
+  transition: opacity 0.2s ease;
+}
+
+.to-app .to-handoff-done,
+.to-app .to-handoff.is-copied .to-handoff-rest {
+  opacity: 0;
+}
+
+.to-app .to-handoff.is-copied .to-handoff-done {
+  opacity: 1;
+  color: var(--to-exact-text);
+}
+
+.to-app .to-handoff:disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
